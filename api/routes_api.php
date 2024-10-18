@@ -37,7 +37,7 @@ $app->get('/booths/available', function (Request $request, Response $response) {
         ->withStatus(200);
 });
 
-// Route สำหรับดึงข้อมูลเหตุการณ์ทั้งหมด
+// Route สำหรับดึงข้อมูล events
 $app->get('/admin/events', function (Request $request, Response $response) {
     $conn = $GLOBALS['connect'];
     $sql = "SELECT * FROM Events";
@@ -52,7 +52,7 @@ $app->get('/admin/events', function (Request $request, Response $response) {
         ->withStatus(200);
 });
 
-// เพิ่มข้อมูลการจัดงาน
+// เพิ่มข้อมูล events
 $app->post('/admin/events', function (Request $request, Response $response) {
     $jsonData = json_decode($request->getBody(), true);
 
@@ -259,11 +259,10 @@ $app->get('/zones', function (Request $request, Response $response) {
 
 
 $app->put('/admin/bookings/{id}/approve', function (Request $request, Response $response, $args) {
-    // รับค่า id ของการจองจาก URL
     $id = $args['id'];
 
     $conn = $GLOBALS['connect'];
-    
+
     // ตรวจสอบสถานะการจองจากฐานข้อมูล
 
     $sql_check_booking = "SELECT booking_status, booth_id FROM Bookings WHERE booking_id = ?";
@@ -274,10 +273,10 @@ $app->put('/admin/bookings/{id}/approve', function (Request $request, Response $
 
     $booking_status = NUll;
     $booth_id = NULL;
-    
+
     $stmt_check->bind_result($booking_status, $booth_id);
     $stmt_check->fetch();
-    $stmt_check->close(); 
+    $stmt_check->close();
 
     // ไม่เจอการจอง
     if (empty($booking_status)) {
@@ -291,7 +290,7 @@ $app->put('/admin/bookings/{id}/approve', function (Request $request, Response $
         return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
     }
 
-    
+
     $conn->autocommit(false);
 
     try {
@@ -301,8 +300,8 @@ $app->put('/admin/bookings/{id}/approve', function (Request $request, Response $
         $stmt_update_booking->bind_param("i", $id);
         $stmt_update_booking->execute();
 
-        // ปิด statement
-        $stmt_update_booking->close();  
+
+        $stmt_update_booking->close();
 
         // อัปเดตสถานะบูธเป็น "จองแล้ว"
         $sql_update_booth = "UPDATE Booths SET booth_status = 'จองแล้ว' WHERE booth_id = ?";
@@ -311,43 +310,39 @@ $app->put('/admin/bookings/{id}/approve', function (Request $request, Response $
         $stmt_update_booth->execute();
 
 
-        $stmt_update_booth->close();  
+        $stmt_update_booth->close();
         $conn->commit();
 
-     
+
         $response->getBody()->write(json_encode(['success' => 'การจองได้รับการอนุมัติแล้ว']));
         return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
     } catch (Exception $e) {
 
-        // ถ้ามีข้อผิดพลาด ให้ทำการ rollback
+        // ถ้ามีข้อผิดพลาด ให้ rollback
         $conn->rollback();
         $response->getBody()->write(json_encode(['error' => 'เกิดข้อผิดพลาดในการอนุมัติการจอง']));
         return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
     } finally {
-        // เปิด autocommit กลับมาอีกครั้ง
+
         $conn->autocommit(true);
     }
 });
 
 // API สำหรับดูรายงานรายชื่อสมาชิก
 $app->get('/admin/members', function (Request $request, Response $response) {
-    // เชื่อมต่อฐานข้อมูล
     $conn = $GLOBALS['connect'];
 
     // SQL คำสั่งสำหรับดึงข้อมูลสมาชิกจากตาราง user
     $sql = "SELECT first_name, last_name, phone, email FROM Users";
 
-    // เตรียม statement
-    $stmt = $conn->prepare($sql);
 
-    // ตรวจสอบว่าการเตรียม statement สำเร็จหรือไม่
+    $stmt = $conn->prepare($sql);
     if ($stmt === false) {
         $response->getBody()->write(json_encode(['error' => 'ไม่สามารถดึงข้อมูลได้']));
         return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
     }
     $stmt->execute();
 
-    // ดึงข้อมูลผลลัพธ์
     $result = $stmt->get_result();
     // เก็บข้อมูลทั้งหมดลงใน array
     $members = [];
@@ -360,26 +355,25 @@ $app->get('/admin/members', function (Request $request, Response $response) {
         ];
     }
 
-    
+
     $stmt->close();
 
-   
+
     if (empty($members)) {
         $response->getBody()->write(json_encode(['message' => 'ไม่พบข้อมูลสมาชิก']));
         return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
     }
 
-    
+
     $response->getBody()->write(json_encode($members));
     return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 });
 
-// API สำหรับดูรายงานผู้ที่ยังไม่ชำระเงิน (สถานะเป็น "จอง")
+//  รายงานผู้ที่ยังไม่ชำระเงิน สถานะเป็น "จอง"
 $app->get('/admin/unpaid', function (Request $request, Response $response) {
-    // เชื่อมต่อฐานข้อมูล
     $conn = $GLOBALS['connect'];
 
-    // SQL คำสั่งสำหรับดึงข้อมูลผู้ที่ยังไม่ชำระเงิน
+    // SQL ดึงข้อมูลผู้ที่ยังไม่ชำระเงิน
     $sql = "
         SELECT 
             u.first_name,
@@ -394,19 +388,15 @@ $app->get('/admin/unpaid', function (Request $request, Response $response) {
         WHERE bk.booking_status = 'จองแล้ว'
         ";
 
-    // เตรียม statement
+
     $stmt = $conn->prepare($sql);
 
-    // ตรวจสอบว่าการเตรียม statement สำเร็จหรือไม่
+    // ตรวจสอบการเตรียม statement 
     if ($stmt === false) {
         $response->getBody()->write(json_encode(['error' => 'ไม่สามารถดึงข้อมูลได้']));
         return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
     }
-
-
     $stmt->execute();
-
-    
     $result = $stmt->get_result();
 
     // เก็บข้อมูลทั้งหมดลงใน array
@@ -421,25 +411,22 @@ $app->get('/admin/unpaid', function (Request $request, Response $response) {
         ];
     }
 
-    // ปิด statement
+
     $stmt->close();
 
-    // ตรวจสอบว่าพบรายการจองที่ยังไม่ชำระหรือไม่
     if (empty($unpaidReservations)) {
         $response->getBody()->write(json_encode(['message' => 'ไม่พบข้อมูลผู้ที่ยังไม่ชำระเงิน']));
         return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
     }
 
-    // ส่งข้อมูลรายการจองที่ยังไม่ชำระกลับไป
     $response->getBody()->write(json_encode($unpaidReservations));
     return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 });
 
 $app->get('/admin/paid-bookings', function ($request, $response, $args) {
-    // ใช้การเชื่อมต่อที่มีอยู่ใน $GLOBALS['connect']
-    $db = $GLOBALS['connect'];
 
-    // เตรียมคำสั่ง SQL เพื่อดึงข้อมูลการจองที่มีสถานะ "ชำระเงินแล้ว"
+    $db = $GLOBALS['connect'];
+    //SQL ดึงข้อมูลการจองที่มีสถานะ "ชำระเงินแล้ว"
     $sql = "
         SELECT 
             u.first_name,
@@ -454,24 +441,21 @@ $app->get('/admin/paid-bookings', function ($request, $response, $args) {
         WHERE bk.booking_status = 'ชำระเงินแล้ว'
     ";
 
-    // ดำเนินการคำสั่ง SQL
     $stmt = $db->prepare($sql);
     $stmt->execute();
-
-    // ดึงข้อมูลทั้งหมดโดยใช้ get_result() และ fetch_all()
     $result = $stmt->get_result();
     $paidBookings = $result->fetch_all(MYSQLI_ASSOC);
 
-    // ส่งข้อมูลกลับในรูปแบบ JSON โดยใช้ json_encode()
+
     $response->getBody()->write(json_encode($paidBookings));
     return $response->withHeader('Content-Type', 'application/json');
 });
 
 $app->get('/admin/pending-bookings', function ($request, $response, $args) {
-    // ใช้การเชื่อมต่อที่มีอยู่ใน $GLOBALS['connect']
+
     $db = $GLOBALS['connect'];
 
-    // เตรียมคำสั่ง SQL เพื่อดึงข้อมูลการจองที่มีสถานะ "อยู่ระหว่างตรวจสอบ"
+    // ดึงข้อมูลการจองที่มีสถานะ "อยู่ระหว่างตรวจสอบ"
     $sql = "
         SELECT 
             u.first_name,
@@ -501,10 +485,10 @@ $app->get('/admin/pending-bookings', function ($request, $response, $args) {
 
 
 $app->get('/admin/all-bookings', function ($request, $response, $args) {
-    // ใช้การเชื่อมต่อที่มีอยู่ใน $GLOBALS['connect']
+
     $db = $GLOBALS['connect'];
 
-    // เตรียมคำสั่ง SQL เพื่อดึงข้อมูลการจองบูธทั้งหมด
+    // SQL ดึงข้อมูลการจองบูธทั้งหมด
     $sql = "
         SELECT 
             u.first_name,
@@ -519,23 +503,20 @@ $app->get('/admin/all-bookings', function ($request, $response, $args) {
         JOIN Zones AS z ON b.zone_id = z.zone_id
     ";
 
-    // ดำเนินการคำสั่ง SQL
     $result = mysqli_query($db, $sql);
 
-    // ตรวจสอบว่ามีผลลัพธ์หรือไม่
+
     if (mysqli_num_rows($result) > 0) {
         $allBookings = [];
-
-        // ดึงข้อมูลแต่ละแถว
         while ($row = mysqli_fetch_assoc($result)) {
             $allBookings[] = $row;
         }
 
-        // ส่งข้อมูลกลับในรูปแบบ JSON
+
         $response->getBody()->write(json_encode($allBookings));
         return $response->withHeader('Content-Type', 'application/json');
     } else {
-        // หากไม่มีข้อมูล
+
         $response->getBody()->write(json_encode([]));
         return $response->withHeader('Content-Type', 'application/json');
     }
@@ -652,9 +633,8 @@ $app->get('/gusest/booths/{id}', function (Request $request, Response $response,
     mysqli_stmt_execute($stmt);
     mysqli_stmt_bind_result($stmt, $id, $name, $size, $status, $price, $image);
 
-    // ตรวจสอบผลลัพธ์
+
     if (mysqli_stmt_fetch($stmt)) {
-        // สร้างข้อมูล JSON
         $boothDetails = [
             'booth_id' => $id,
             'booth_name' => $name,
@@ -684,7 +664,7 @@ $app->get('/gusest/booths/{id}', function (Request $request, Response $response,
 $app->post('/login', function (Request $request, Response $response) {
     $db = $GLOBALS['connect'];
 
-    // รับข้อมูลจาก Body
+    // รับข้อมูลจาก form
     $data = json_decode($request->getBody()->getContents(), true);
     $email = $data['email'] ?? null;
     $password = $data['password'] ?? null;
@@ -715,7 +695,7 @@ $app->post('/login', function (Request $request, Response $response) {
                 'prefix' => $prefix,
             ];
 
-            // ส่งข้อมูล JSON กลับ
+
             $response->getBody()->write(json_encode($userDetails));
             return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
         } else {
