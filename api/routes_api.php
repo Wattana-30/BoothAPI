@@ -56,11 +56,26 @@ $app->get('/admin/events', function (Request $request, Response $response) {
 $app->post('/admin/events', function (Request $request, Response $response) {
     $jsonData = json_decode($request->getBody(), true);
 
-    if (isset($jsonData['event_name'], $jsonData['event_start_date'], $jsonData['event_end_date'])) {
+    if (isset(
+        $jsonData['event_name'],
+        $jsonData['event_start_date'],
+        $jsonData['event_end_date']
+    )) {
         $conn = $GLOBALS['connect'];
-        $sql = "INSERT INTO Events (event_name, event_start_date, event_end_date) VALUES (?, ?, ?)";
+        $sql = "INSERT INTO Events (
+        event_name, 
+        event_start_date, 
+        event_end_date) 
+        VALUES (?, ?, ?)";
+
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param('sss', $jsonData['event_name'], $jsonData['event_start_date'], $jsonData['event_end_date']);
+        $stmt->bind_param(
+            'sss',
+            $jsonData['event_name'],
+            $jsonData['event_start_date'],
+            $jsonData['event_end_date']
+        );
+
 
         if ($stmt->execute()) {
             $data = ["affected_rows" => $stmt->affected_rows, "last_idx" => $conn->insert_id];
@@ -103,11 +118,26 @@ $app->put('/admin/events/{id}', function (Request $request, Response $response, 
     $id = $args['id'];
     $jsonData = json_decode($request->getBody(), true);
 
-    if (isset($jsonData['event_name'], $jsonData['event_start_date'], $jsonData['event_end_date'])) {
+    if (isset(
+        $jsonData['event_name'],
+        $jsonData['event_start_date'],
+        $jsonData['event_end_date']
+    )) {
         $conn = $GLOBALS['connect'];
-        $sql = "UPDATE Events SET event_name = ?, event_start_date = ?, event_end_date = ? WHERE event_id = ?";
+        $sql = "UPDATE Events SET 
+        event_name = ?, 
+        event_start_date = ?, 
+        event_end_date = ? 
+        WHERE event_id = ?";
+
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param('sssi', $jsonData['event_name'], $jsonData['event_start_date'], $jsonData['event_end_date'], $id);
+        $stmt->bind_param(
+            'sssi',
+            $jsonData['event_name'],
+            $jsonData['event_start_date'],
+            $jsonData['event_end_date'],
+            $id
+        );
 
         if ($stmt->execute() && $stmt->affected_rows > 0) {
             $data = ["affected_rows" => $stmt->affected_rows];
@@ -129,11 +159,32 @@ $app->put('/admin/events/{id}', function (Request $request, Response $response, 
 $app->post('/admin/booths', function (Request $request, Response $response) {
     $jsonData = json_decode($request->getBody(), true);
 
-    if (isset($jsonData['booth_name'], $jsonData['booth_size'], $jsonData['booth_price'], $jsonData['booth_image'], $jsonData['zone_id'])) {
+    if (isset(
+        $jsonData['booth_name'],
+        $jsonData['booth_size'],
+        $jsonData['booth_price'],
+        $jsonData['booth_image'],
+        $jsonData['zone_id']
+    )) {
         $conn = $GLOBALS['connect'];
-        $sql = "INSERT INTO Booths (booth_name, booth_size, booth_status, booth_price, booth_image, zone_id) VALUES (?, ?, 'ว่าง', ?, ?, ?)";
+        $sql = "INSERT INTO Booths 
+        (booth_name, 
+        booth_size, 
+        booth_status, 
+        booth_price, 
+        booth_image, 
+        zone_id) 
+        VALUES (?, ?, 'ว่าง', ?, ?, ?)";
+
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param('ssdss', $jsonData['booth_name'], $jsonData['booth_size'], $jsonData['booth_price'], $jsonData['booth_image'], $jsonData['zone_id']);
+        $stmt->bind_param(
+            'ssdss',
+            $jsonData['booth_name'],
+            $jsonData['booth_size'],
+            $jsonData['booth_price'],
+            $jsonData['booth_image'],
+            $jsonData['zone_id']
+        );
 
         if ($stmt->execute()) {
             $data = ["affected_rows" => $stmt->affected_rows, "last_idx" => $conn->insert_id];
@@ -156,11 +207,32 @@ $app->put('/admin/booths/{id}', function (Request $request, Response $response, 
     $id = $args['id'];
     $jsonData = json_decode($request->getBody(), true);
 
-    if (isset($jsonData['booth_name'], $jsonData['booth_size'], $jsonData['booth_price'], $jsonData['booth_image'], $jsonData['zone_id'])) {
+    if (isset(
+        $jsonData['booth_name'],
+        $jsonData['booth_size'],
+        $jsonData['booth_price'],
+        $jsonData['booth_image'],
+        $jsonData['zone_id']
+    )) {
         $conn = $GLOBALS['connect'];
-        $sql = "UPDATE Booths SET booth_name = ?, booth_size = ?, booth_price = ?, booth_image = ?, zone_id = ? WHERE booth_id = ?";
+        $sql = "UPDATE Booths SET 
+        booth_name = ?, 
+        booth_size = ?, 
+        booth_price = ?, 
+        booth_image = ?, 
+        zone_id = ? 
+        WHERE booth_id = ?";
+
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param('ssdssi', $jsonData['booth_name'], $jsonData['booth_size'], $jsonData['booth_price'], $jsonData['booth_image'], $jsonData['zone_id'], $id);
+        $stmt->bind_param(
+            'ssdssi',
+            $jsonData['booth_name'],
+            $jsonData['booth_size'],
+            $jsonData['booth_price'],
+            $jsonData['booth_image'],
+            $jsonData['zone_id'],
+            $id
+        );
 
         if ($stmt->execute() && $stmt->affected_rows > 0) {
             $data = ["affected_rows" => $stmt->affected_rows];
@@ -202,11 +274,22 @@ $app->delete('/admin/booths/{id}', function (Request $request, Response $respons
 $app->post('/booking', function (Request $request, Response $response) {
     $jsonData = json_decode($request->getBody(), true);
 
-    if (isset($jsonData['booth_id'], $jsonData['user_id'])) {
+    if (isset(
+        $jsonData['booth_id'],
+        $jsonData['user_id']
+    )) {
         $conn = $GLOBALS['connect'];
-        $sql = "INSERT INTO Bookings (booth_id, user_id) VALUES (?, ?)";
+        $sql = "INSERT INTO Bookings 
+        (booth_id, 
+        user_id) 
+        VALUES (?, ?)";
+
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param('ii', $jsonData['booth_id'], $jsonData['user_id']);
+        $stmt->bind_param(
+            'ii',
+            $jsonData['booth_id'],
+            $jsonData['user_id']
+        );
 
         if ($stmt->execute()) {
             $data = ["affected_rows" => $stmt->affected_rows, "last_idx" => $conn->insert_id];
@@ -532,7 +615,14 @@ $app->post('/register', function (Request $request, Response $response) {
     $data = json_decode($request->getBody(), true); // แก้ไขการดึงข้อมูล
 
     // ตรวจสอบว่ามีข้อมูลที่จำเป็นอยู่ใน $data
-    if ($data === null || !isset($data['prefix'], $data['first_name'], $data['last_name'], $data['phone'], $data['email'], $data['password'])) {
+    if ($data === null || !isset(
+        $data['prefix'],
+        $data['first_name'],
+        $data['last_name'],
+        $data['phone'],
+        $data['email'],
+        $data['password']
+    )) {
         $response->getBody()->write(json_encode(['message' => 'ข้อมูลที่ส่งมาผิดพลาด']));
         return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
     }
